@@ -1,1 +1,49 @@
 
+name: Build pico_serprog
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            cmake \
+            gcc-arm-none-eabi \
+            libnewlib-arm-none-eabi \
+            build-essential \
+            git
+
+      - name: Clone Pico SDK
+        run: |
+          git clone https://github.com/raspberrypi/pico-sdk.git ~/pico-sdk
+          cd ~/pico-sdk
+          git submodule update --init
+
+      - name: Set Pico SDK Path
+        run: echo "PICO_SDK_PATH=$HOME/pico-sdk" >> $GITHUB_ENV
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+
+      - name: Build
+        run: |
+          cd build
+          make -j$(nproc)
+
+      - name: Upload UF2
+        uses: actions/upload-artifact@v4
+        with:
+          name: pico_serprog
+          path: build/*.uf2
